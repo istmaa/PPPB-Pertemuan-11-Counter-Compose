@@ -3,6 +3,7 @@ package com.example.countercompose
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,11 +40,18 @@ fun CounterApp(
     viewModel: CounterViewModel = viewModel()
 ) {
     val counter by viewModel.counter
+    val nameInput by viewModel.nameInput
+    val savedName by viewModel.savedName
+
     CounterScreen(
         counter = counter,
+        nameInput = nameInput,
+        savedName = savedName,
         onIncrement = { viewModel.increment() },
         onDecrement = { viewModel.decrement() },
         onReset = { viewModel.reset() },
+        onNameChange = { viewModel.updateNameInput(it) },
+        onSaveName = { viewModel.saveName() },
         modifier = modifier
     )
 }
@@ -48,40 +59,77 @@ fun CounterApp(
 @Composable
 fun CounterScreen(
     counter: Int,
+    nameInput: String,
+    savedName: String,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     onReset: () -> Unit,
+    onNameChange: (String) -> Unit,
+    onSaveName: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Counter App",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        CounterDisplay(
-            value = counter,
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val isCompactHeight = maxHeight < 500.dp
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        CounterButtons(
-            onDecrement = onDecrement,
-            onIncrement = onIncrement,
-            onReset = onReset
-        )
+                .fillMaxSize()
+                .then(
+                    if (isCompactHeight) Modifier.verticalScroll(rememberScrollState())
+                    else Modifier
+                )
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Counter App",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            CounterDisplay(
+                value = counter,
+                savedName = savedName,
+                modifier = if (isCompactHeight) {
+                    Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                } else {
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            CounterButtons(
+                onDecrement = onDecrement,
+                onIncrement = onIncrement,
+                onReset = onReset
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextField(
+                value = nameInput,
+                onValueChange = onNameChange,
+                label = { Text("Nama") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onSaveName,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("SIMPAN")
+            }
+        }
     }
 }
 
 @Composable
-fun CounterDisplay(value: Int, modifier: Modifier = Modifier) {
+fun CounterDisplay(
+    value: Int,
+    savedName: String = "",
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier.background(
             color = Color(0xFFF5F5F5),
@@ -97,11 +145,24 @@ fun CounterDisplay(value: Int, modifier: Modifier = Modifier) {
                 .align(Alignment.TopCenter)
                 .padding(top = 16.dp)
         )
-        Text(
-            text = value.toString(),
-            fontSize = 120.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Text(
+                text = value.toString(),
+                fontSize = 120.sp,
+                fontWeight = FontWeight.Bold
+            )
+            if (savedName.isNotBlank()) {
+                Text(
+                    text = savedName,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.DarkGray
+                )
+            }
+        }
     }
 }
 
@@ -172,9 +233,13 @@ fun CounterScreenPreview() {
     CounterComposeTheme {
         CounterScreen(
             counter = 7,
+            nameInput = "",
+            savedName = "Haydar Istma Ulhaq",
             onIncrement = {},
             onDecrement = {},
-            onReset = {}
+            onReset = {},
+            onNameChange = {},
+            onSaveName = {}
         )
     }
 }
